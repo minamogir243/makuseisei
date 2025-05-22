@@ -39,8 +39,13 @@
     </div>
 
     <fieldset>
-      <legend>画像不透明度</legend>
-      <label>不透明度（0〜100）：<input type="number" id="opacity" min="0" max="100" step="1" value="100"></label>
+      <legend>画像透明度</legend>
+      <label>透明度（0〜100）：<input type="number" id="opacity" min="0" max="100" step="1" value="100"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>アンチエイリアス</legend>
+      <label><input type="checkbox" id="antialias" checked> 有効にする</label>
     </fieldset>
 
     <div class="controls">
@@ -109,8 +114,12 @@
   document.getElementById('generate').addEventListener('click', () => {
     const layout = document.querySelector('input[name="layout"]:checked').value;
     const opacity = parseInt(document.getElementById('opacity').value,10) / 100;
+    const antialias = document.getElementById('antialias').checked;
 
-    canvas.style.imageRendering = 'auto'; ctx.globalAlpha = opacity;
+    // アンチエイリアス設定
+    canvas.style.imageRendering = antialias ? 'auto' : 'pixelated';
+    ctx.imageSmoothingEnabled = antialias;
+    ctx.globalAlpha = opacity;
 
     const groups = [1,2].map(i => ({
       on: document.getElementById('on'+i).checked,
