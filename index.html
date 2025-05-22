@@ -7,7 +7,7 @@
     body { font-family: sans-serif; padding: 20px; }
     .container { display: flex; gap: 40px; }
     .left { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    #preview { border: 1px solid #ccc; background: #fff; image-rendering: auto; }
+    #preview { border: 1px solid #ccc; background: #fff; }
     .buttons { display: flex; gap: 10px; }
     .big-button { background: #bf6; border: none; padding: 10px 20px; font-size: 1.2rem; cursor: pointer; }
     .right { display: flex; flex-direction: column; gap: 20px; }
@@ -116,9 +116,10 @@
     const opacity = parseInt(document.getElementById('opacity').value,10) / 100;
     const antialias = document.getElementById('antialias').checked;
 
-    // アンチエイリアス設定
-    canvas.style.imageRendering = antialias ? 'auto' : 'pixelated';
-    ctx.imageSmoothingEnabled = antialias;
+    // アンチエイリアスCSS設定
+    const mode = antialias ? 'auto' : 'pixelated';
+    canvas.style.imageRendering = mode;
+    canvas.style.msInterpolationMode = antialias ? 'bicubic' : 'nearest-neighbor';
     ctx.globalAlpha = opacity;
 
     const groups = [1,2].map(i => ({
