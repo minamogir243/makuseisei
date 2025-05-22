@@ -6,67 +6,80 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     .container { display: flex; gap: 40px; }
-    .left { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-    #preview { border: 1px solid #ccc; background: #0ff; }
-    .big-button { background: #bf6; border: none; padding: 20px 40px; font-size: 2rem; cursor: pointer; }
+    .left { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    #preview { border: 1px solid #ccc; background: #fff; image-rendering: auto; }
+    .buttons { display: flex; gap: 10px; }
+    .big-button { background: #bf6; border: none; padding: 10px 20px; font-size: 1.2rem; cursor: pointer; }
     .right { display: flex; flex-direction: column; gap: 20px; }
     .controls { display: flex; gap: 20px; }
     fieldset { border: 1px solid #aaa; padding: 10px; width: 260px; }
     legend { font-weight: bold; }
     label { display: block; margin: 6px 0; font-size: 0.9rem; }
-    input[type="number"] { width: 80px; }
+    input[type="number"], input[type="range"] { width: 100%; }
     select, input[type="text"], input[type="color"], textarea { width: 100%; box-sizing: border-box; }
     .layout-selector { margin-bottom: 10px; }
+    .advanced-options { margin-top: 10px; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <!-- 左列：プレビューとボタン -->
   <div class="left">
     <canvas id="preview" width="400" height="150"></canvas>
-    <button id="generate" class="big-button">画像を生成</button>
+    <div class="buttons">
+      <button id="generate" class="big-button">画像を生成</button>
+      <button id="copy" class="big-button">コピー</button>
+    </div>
   </div>
 
-  <!-- 右列：パラメータ -->
   <div class="right">
-    <!-- レイアウト選択 -->
     <div class="layout-selector">
       <label><input type="radio" name="layout" value="vertical" checked> ❶ 種別が上、方向幕が下</label>
       <label><input type="radio" name="layout" value="horizontal"> ❷ 種別が左、方向幕が右</label>
     </div>
 
+    <fieldset>
+      <legend>画像透明度</legend>
+      <label>透明度（0%〜100%）：<input type="range" id="opacity" min="0" max="100" step="1" value="100"></label>
+    </fieldset>
+
     <div class="controls">
-      <!-- 種別 -->
       <fieldset id="group1">
-        <legend>種別</n></legend>
+        <legend>種別</legend>
         <label><input type="checkbox" id="on1" checked> ON</label>
         <label>フォント選択：<select id="font1">
             <option value="MS Gothic">MS ゴシック</option>
             <option value="MS Mincho">MS 明朝</option>
-          </select>
-        </label>
-        <label>背景色：<input type="color" id="bg1" value="#00ff00"></label>
+          </select></label>
+        <label>背景色：<input type="color" id="bg1" value="#ffffff"></label>
         <label>横幅サイズ：<input type="number" id="w1" value="300"></label>
         <label>縦幅サイズ：<input type="number" id="h1" value="100"></label>
         <label>文字：<textarea id="text1" rows="2">種別</textarea></label>
+        <label><input type="checkbox" id="subOn1" checked> サブ文字を表示</label>
+        <label>サブ文字：<textarea id="sub1" rows="1" placeholder="サブ文字"></textarea></label>
         <label>文字色：<input type="color" id="color1" value="#000000"></label>
+        <div class="advanced-options">
+          <label>文字サイズ（任意）：<input type="number" id="size1" placeholder="自動調整"></label>
+        </div>
       </fieldset>
 
-      <!-- 方向幕 -->
       <fieldset id="group2">
-        <legend>方向幕</n></legend>
+        <legend>方向幕</legend>
         <label><input type="checkbox" id="on2" checked> ON</label>
         <label>フォント選択：<select id="font2">
             <option value="MS Gothic">MS ゴシック</option>
             <option value="MS Mincho">MS 明朝</option>
-          </select>
-        </label>
-        <label>背景色：<input type="color" id="bg2" value="#00ff00"></label>
+          </select></label>
+        <label>背景色：<input type="color" id="bg2" value="#ffffff"></label>
         <label>横幅サイズ：<input type="number" id="w2" value="300"></label>
         <label>縦幅サイズ：<input type="number" id="h2" value="100"></label>
         <label>文字：<textarea id="text2" rows="2">方向幕</textarea></label>
+        <label><input type="checkbox" id="subOn2" checked> サブ文字を表示</label>
+        <label>サブ文字：<textarea id="sub2" rows="1" placeholder="サブ文字"></textarea></label>
         <label>文字色：<input type="color" id="color2" value="#000000"></label>
+        <div class="advanced-options">
+          <label>文字サイズ（任意）：<input type="number" id="size2" placeholder="自動調整"></label>
+        </div>
       </fieldset>
     </div>
   </div>
@@ -76,35 +89,29 @@
   const canvas = document.getElementById('preview');
   const ctx = canvas.getContext('2d');
 
-  // 初期プレースホルダー表示
   function drawPlaceholder() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = '#0ff';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = '#000';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#000'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('作成された画像を表示する', canvas.width/2, canvas.height/2);
   }
   drawPlaceholder();
 
-  // テキストをボックスにフィットさせる
   function fitText(text, boxW, boxH, fontFamily) {
     let fontSize = boxH;
     ctx.font = fontSize + 'px ' + fontFamily;
-    while (ctx.measureText(text).width > boxW - 4) {
-      fontSize--;
-      ctx.font = fontSize + 'px ' + fontFamily;
+    while (ctx.measureText(text).width > boxW - 4 && fontSize > 5) {
+      fontSize--; ctx.font = fontSize + 'px ' + fontFamily;
     }
     return fontSize;
   }
 
   document.getElementById('generate').addEventListener('click', () => {
-    // レイアウト取得
     const layout = document.querySelector('input[name="layout"]:checked').value;
+    const opacity = parseInt(document.getElementById('opacity').value,10) / 100;
 
-    // パラメータ取得
+    canvas.style.imageRendering = 'auto'; ctx.globalAlpha = opacity;
+
     const groups = [1,2].map(i => ({
       on: document.getElementById('on'+i).checked,
       font: document.getElementById('font'+i).value,
@@ -112,55 +119,65 @@
       w: parseInt(document.getElementById('w'+i).value,10),
       h: parseInt(document.getElementById('h'+i).value,10),
       text: document.getElementById('text'+i).value,
+      subOn: document.getElementById('subOn'+i).checked,
+      sub: document.getElementById('sub'+i).value,
       color: document.getElementById('color'+i).value,
+      size: parseInt(document.getElementById('size'+i).value,10) || null
     }));
 
-    const g1 = groups[0], g2 = groups[1];
+    function drawGroup(x, y, g) {
+      ctx.fillStyle = g.bg;
+      ctx.fillRect(x, y, g.w, g.h);
+      const mainSize = g.size || fitText(g.text, g.w, g.h * (g.subOn && g.sub ? 0.6 : 1), g.font);
+      ctx.fillStyle = g.color;
+      ctx.font = mainSize + 'px ' + g.font;
+      ctx.textAlign = 'center';
+      if (g.subOn && g.sub) {
+        ctx.textBaseline = 'top';
+        ctx.fillText(g.text, x + g.w / 2, y + 5);
+        const subSize = Math.floor(mainSize * 0.5);
+        ctx.font = subSize + 'px ' + g.font;
+        ctx.fillText(g.sub, x + g.w / 2, y + 5 + mainSize + 2);
+      } else {
+        ctx.textBaseline = 'middle';
+        ctx.fillText(g.text, x + g.w / 2, y + g.h / 2);
+      }
+    }
 
     if (layout === 'vertical') {
-      // 縦並び: 上下
-      const totalW = Math.max(g1.on ? g1.w : 0, g2.on ? g2.w : 0);
-      const totalH = (g1.on ? g1.h : 0) + (g2.on ? g2.h : 0);
-      canvas.width = totalW || 400;
-      canvas.height = totalH || 150;
-
-      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const totalW = Math.max(...groups.filter(g => g.on).map(g => g.w));
       let offsetY = 0;
+      canvas.width = totalW || 400;
+      canvas.height = groups.filter(g => g.on).reduce((sum, g) => sum + g.h, 0) || 150;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = opacity;
       groups.forEach(g => {
         if (!g.on) return;
-        ctx.fillStyle = g.bg;
-        ctx.fillRect(0, offsetY, g.w, g.h);
-        const fs = fitText(g.text, g.w, g.h, g.font);
-        ctx.fillStyle = g.color;
-        ctx.font = fs + 'px ' + g.font;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(g.text, g.w/2, offsetY + g.h/2);
+        drawGroup(0, offsetY, g);
         offsetY += g.h;
       });
-
     } else {
-      // 横並び: 左右
-      const totalW = (g1.on ? g1.w : 0) + (g2.on ? g2.w : 0);
-      const totalH = Math.max(g1.on ? g1.h : 0, g2.on ? g2.h : 0);
-      canvas.width = totalW || 400;
-      canvas.height = totalH || 150;
-
-      ctx.clearRect(0,0,canvas.width,canvas.height);
       let offsetX = 0;
+      canvas.width = groups.filter(g => g.on).reduce((sum, g) => sum + g.w, 0) || 400;
+      canvas.height = Math.max(...groups.filter(g => g.on).map(g => g.h)) || 150;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = opacity;
       groups.forEach(g => {
         if (!g.on) return;
-        ctx.fillStyle = g.bg;
-        ctx.fillRect(offsetX, 0, g.w, g.h);
-        const fs = fitText(g.text, g.w, g.h, g.font);
-        ctx.fillStyle = g.color;
-        ctx.font = fs + 'px ' + g.font;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(g.text, offsetX + g.w/2, g.h/2);
+        drawGroup(offsetX, 0, g);
         offsetX += g.w;
       });
     }
+    ctx.globalAlpha = 1;
+  });
+
+  document.getElementById('copy').addEventListener('click', () => {
+    canvas.toBlob(blob => {
+      if (!navigator.clipboard) return alert('コピーに対応していないブラウザです');
+      navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+        .then(() => alert('クリップボードにコピーしました'))
+        .catch(err => alert('コピー失敗: ' + err));
+    });
   });
 </script>
 </body>
